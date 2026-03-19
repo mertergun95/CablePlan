@@ -1,0 +1,196 @@
+﻿<Window x:Class="CablePlan.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Kabel-Lageplan – Markierung"
+        Width="1520" Height="980">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="440" />
+        </Grid.ColumnDefinitions>
+
+        <!-- VIEWER -->
+        <Border Grid.Column="0" Background="#111">
+            <ScrollViewer x:Name="PdfScroll"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto"
+                          CanContentScroll="False"
+                          PreviewMouseWheel="PdfScroll_PreviewMouseWheel"
+                          PreviewMouseDown="PdfScroll_PreviewMouseDown"
+                          PreviewMouseUp="PdfScroll_PreviewMouseUp"
+                          PreviewMouseMove="PdfScroll_PreviewMouseMove"
+                          PreviewMouseLeftButtonDown="PdfScroll_PreviewMouseLeftButtonDown">
+
+                <Grid x:Name="ContentRoot">
+                    <Grid.LayoutTransform>
+                        <ScaleTransform x:Name="ZoomTf" ScaleX="1" ScaleY="1"/>
+                    </Grid.LayoutTransform>
+
+                    <Image x:Name="PlanImage"
+                           Stretch="None"
+                           SnapsToDevicePixels="True"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+
+                    <Canvas x:Name="Overlay"
+                            IsHitTestVisible="True"
+                            Background="Transparent"/>
+                </Grid>
+            </ScrollViewer>
+        </Border>
+
+        <!-- RIGHT PANEL -->
+        <Border Grid.Column="1" Background="#F7F7F7" BorderBrush="#DDD" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="12" VerticalAlignment="Top">
+
+                    <TextBlock Text="Workspace" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
+                    <TextBlock x:Name="TxtWorkspacePath" Text="-" Foreground="#444" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button x:Name="BtnOpenWorkspaceFolder" Content="Ordner öffnen" Height="30" Width="150" Margin="0,0,8,0"/>
+                        <Button x:Name="BtnChooseWorkspace" Content="Workspace wechseln" Height="30" Width="150"/>
+                    </StackPanel>
+
+                    <Separator Margin="0,12"/>
+
+                    <TextBlock Text="PDF-Bibliothek" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="BtnImportPdf" Content="PDF importieren" Height="32" Width="150" Margin="0,0,8,0"/>
+                        <Button x:Name="BtnOpenSelectedPdf" Content="PDF öffnen" Height="32" Width="120"/>
+                    </StackPanel>
+                    <ListBox x:Name="LstPdfs" Height="180" Margin="0,8,0,0"/>
+
+                    <Separator Margin="0,12"/>
+
+                    <TextBlock Text="Ansicht" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
+                    <TextBlock x:Name="TxtMode" Text="Modus: Ansicht" FontWeight="Bold" Foreground="#222" Margin="0,0,0,8"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button x:Name="BtnFitWidth" Content="An Breite anpassen" Height="32" Width="170" Margin="0,0,8,0"/>
+                        <Button x:Name="BtnFitPage" Content="An Seite anpassen" Height="32" Width="150"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="BtnRotateLeft" Content="↺ 90°" Width="90" Height="30" Margin="0,0,8,0"/>
+                        <Button x:Name="BtnRotateRight" Content="↻ 90°" Width="90" Height="30" Margin="0,0,8,0"/>
+                        <TextBlock Text="Rotation:" VerticalAlignment="Center" Margin="10,0,4,0"/>
+                        <TextBlock x:Name="TxtRotation" Text="0°" VerticalAlignment="Center" FontWeight="Bold"/>
+                    </StackPanel>
+
+                    <TextBlock Margin="0,8,0,0" Foreground="#444"
+                               Text="Pan: mittlere Maustaste halten &amp; ziehen. Zoom: Mausrad. ESC=Abbrechen. Enter=Speichern."/>
+
+                    <Separator Margin="0,12"/>
+
+                    <TextBlock Text="Zeichnen" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
+                    <StackPanel Orientation="Horizontal">
+                        <ToggleButton x:Name="TglDrawCable" Content="Kabel zeichnen" Width="130" Height="30" Margin="0,0,8,0"/>
+                        <ToggleButton x:Name="TglDrawSperrpause" Content="Sperrpause zeichnen" Width="150" Height="30" Margin="0,0,8,0"/>
+                        <ToggleButton x:Name="TglSetLabel" Content="Beschriftung" Width="100" Height="30"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Kabel-ID" FontWeight="Bold" Margin="0,12,0,6"/>
+                    <TextBox x:Name="TxtCableId" Height="28"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button x:Name="BtnFinishCable" Content="Kabel speichern" Height="30" Width="150" Margin="0,0,8,0"/>
+                        <Button x:Name="BtnDeleteCable" Content="Kabel löschen" Height="30" Width="120"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Sperrpause-ID" FontWeight="Bold" Margin="0,12,0,6"/>
+                    <TextBox x:Name="TxtSperrpauseId" Height="28"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button x:Name="BtnFinishSperrpause" Content="Sperrpause speichern" Height="30" Width="170" Margin="0,0,8,0"/>
+                        <Button x:Name="BtnDeleteSperrpause" Content="Sperrpause löschen" Height="30" Width="150"/>
+                    </StackPanel>
+
+                    <Button x:Name="BtnCancel" Content="Abbrechen" Height="30" Width="120" Margin="0,8,0,0"/>
+
+                    <Separator Margin="0,14"/>
+
+                    <TextBlock Text="Global: Kabel suchen (über alle PDFs)" FontWeight="Bold" Margin="0,0,0,6"/>
+                    <TextBox x:Name="TxtGlobalCableSearch" Height="28"/>
+                    <ListBox x:Name="LstGlobalCables" Height="160" Margin="0,8,0,0"/>
+
+                    <Separator Margin="0,14"/>
+
+                    <DockPanel Margin="0,0,0,6">
+                        <TextBlock Text="Dieses PDF: Kabel-Liste"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"/>
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                            <Button x:Name="BtnClearCableSelection"
+                                    Content="Auswahl löschen"
+                                    Width="110"
+                                    Height="24"
+                                    Margin="0,0,8,0"/>
+                            <ToggleButton x:Name="TglMultiSelect"
+                                          Content="Multi"
+                                          Width="70"
+                                          Height="24"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <TextBox x:Name="TxtSearch" Height="28"/>
+
+                    <ListBox x:Name="LstCables"
+                         Height="170"
+                         Margin="0,8,0,0"
+                         SelectionMode="Single">    
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <EventSetter Event="PreviewMouseRightButtonDown"
+                                     Handler="LstCablesItem_PreviewMouseRightButtonDown"/>
+                                <Setter Property="ContextMenu">
+                                    <Setter.Value>
+                                        <ContextMenu>
+                                            <MenuItem x:Name="MiAssignSperrpause"
+                                                Header="Sperrpause zuweisen"/>
+                                        </ContextMenu>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                    </ListBox>
+
+                    <Separator Margin="0,14"/>
+
+                    <DockPanel Margin="0,0,0,6">
+                        <TextBlock Text="Sperrpausen-Filter"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"/>
+
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                            <ToggleButton x:Name="TglCableBasedSperrFilter"
+                                          Content="Kabel-Filter"
+                                          Width="100"
+                                          Height="24"
+                                          IsChecked="True"
+                                          Margin="0,0,8,0"/>
+                            <Button x:Name="BtnClearSperrFilter"
+                                    Content="Filter leeren"
+                                    Width="100"
+                                    Height="24"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <TextBlock x:Name="TxtSperrFilterInfo"
+                               Text="Alle Sperrpausen sichtbar"
+                               Foreground="#666"
+                               Margin="0,0,0,6"/>
+
+                    <TextBox x:Name="TxtSperrSearch" Height="28"/>
+
+                    <ListBox x:Name="LstSperrpauses"
+                             Height="170"
+                             Margin="0,8,0,0"
+                             SelectionMode="Extended"/>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Window>
