@@ -4,6 +4,7 @@ using PdfiumViewer;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows;
@@ -21,6 +22,11 @@ namespace CablePlan
 {
     public partial class MainWindow : Window
     {
+        private static readonly string AppSettingsPath = IOPath.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "CablePlan",
+            "appsettings.json");
+
         private string _workspaceRoot = "";
         private string _workspacePdfDir = "";
         private string _workspaceDataDir = "";
@@ -107,6 +113,11 @@ namespace CablePlan
                 new(StringComparer.OrdinalIgnoreCase);
         }
 
+        public class AppSettings
+        {
+            public string LastWorkspacePath { get; set; } = "";
+        }
+
         private PlanData _data = new();
         private WorkspaceMeta _ws = new();
 
@@ -119,6 +130,7 @@ namespace CablePlan
             Loaded += (_, __) =>
             {
                 AttachCableContextMenuHandlers();
+                AttachSperrpauseContextMenuHandlers();
             };
 
             BtnChooseWorkspace.Click += (_, __) => ChooseWorkspaceFolder();
@@ -147,6 +159,9 @@ namespace CablePlan
 
             TglSetLabel.Checked += (_, __) => UpdateModeText();
             TglSetLabel.Unchecked += (_, __) => UpdateModeText();
+
+            ExpDrawPanel.Expanded += (_, __) => UpdateModeText();
+            ExpDrawPanel.Collapsed += (_, __) => CollapseDrawTools();
 
             TglMultiSelect.Checked += (_, __) => ApplyMultiSelectMode();
             TglMultiSelect.Unchecked += (_, __) => ApplyMultiSelectMode();
@@ -228,6 +243,7 @@ namespace CablePlan
             UpdateModeText();
             ApplyMultiSelectMode();
             UpdateSperrFilterInfo();
+            TryRestoreLastWorkspace();
         }
 
         private DrawKind GetCurrentDrawKind()
@@ -242,18 +258,12 @@ namespace CablePlan
             if (_isUpdatingSperrSelection)
                 return;
 
-            foreach (var item in e.AddedItems)
-            {
-                if (item is string id)
-                {
-                    if (_activeSperrpauseFilters.Contains(id))
-                        _activeSperrpauseFilters.Remove(id);
-                    else
-                        _activeSperrpauseFilters.Add(id);
-                }
-            }
+            _activeSperrpauseFilters.Clear();
+            foreach (var id in LstSperrpauses.SelectedItems.OfType<string>())
+                _activeSperrpauseFilters.Add(id);
 
             RefreshCurrentPdfSperrpauseList();
+            RefreshCurrentPdfCableList();
             RedrawAll();
         }
 
@@ -284,8 +294,47 @@ namespace CablePlan
                 }
             };
         }
+
+        private void AttachSperrpauseContextMenuHandlers()
+        {
+            if (LstSperrpauses.ItemContainerGenerator == null)
+                return;
+
+            LstSperrpauses.ItemContainerGenerator.StatusChanged += (_, __) =>
+            {
+                if (LstSperrpauses.ItemContainerGenerator.Status != System.Windows.Controls.Primitives.GeneratorStatus.ContainersGenerated)
+                    return;
+
+                for (int i = 0; i < LstSperrpauses.Items.Count; i++)
+                {
+                    if (LstSperrpauses.ItemContainerGenerator.ContainerFromIndex(i) is ListBoxItem item &&
+                        item.ContextMenu != null)
+                    {
+                        foreach (var obj in item.ContextMenu.Items)
+                        {
+                            if (obj is MenuItem mi && Equals(mi.Header, "Kabel zuordnen"))
+                            {
+                                mi.Click -= AssignCablesToSperrpause_Click;
+                                mi.Click += AssignCablesToSperrpause_Click;
+                            }
+                        }
+                    }
+                }
+            };
+        }
+
+        private void CollapseDrawTools()
+        {
+            ActivateDrawMode(DrawKind.None);
+            TglSetLabel.IsChecked = false;
+            UpdateModeText();
+        }
+
         private void ActivateDrawMode(DrawKind kind)
         {
+            if (!ExpDrawPanel.IsExpanded && kind != DrawKind.None)
+                ExpDrawPanel.IsExpanded = true;
+
             if (kind == DrawKind.Cable)
             {
                 TglDrawCable.IsChecked = true;
@@ -318,6 +367,48 @@ namespace CablePlan
                 SetWorkspace(dlg.SelectedPath);
         }
 
+        private void TryRestoreLastWorkspace()
+        {
+            try
+            {
+                if (!File.Exists(AppSettingsPath))
+                    return;
+
+                var json = File.ReadAllText(AppSettingsPath);
+                var settings = JsonSerializer.Deserialize<AppSettings>(json);
+                var path = settings?.LastWorkspacePath?.Trim() ?? "";
+
+                if (path.Length == 0 || !IODir.Exists(path))
+                    return;
+
+                SetWorkspace(path);
+            }
+            catch
+            {
+            }
+        }
+
+        private void SaveAppSettings()
+        {
+            try
+            {
+                var dir = IOPath.GetDirectoryName(AppSettingsPath);
+                if (!string.IsNullOrWhiteSpace(dir))
+                    IODir.CreateDirectory(dir);
+
+                var data = new AppSettings
+                {
+                    LastWorkspacePath = _workspaceRoot
+                };
+
+                var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(AppSettingsPath, json);
+            }
+            catch
+            {
+            }
+        }
+
         private void SetWorkspace(string root)
         {
             _workspaceRoot = root;
@@ -330,6 +421,7 @@ namespace CablePlan
             IODir.CreateDirectory(_workspaceDataDir);
 
             TxtWorkspacePath.Text = _workspaceRoot;
+            SaveAppSettings();
 
             LoadWorkspaceMeta();
             LoadAssignments();
@@ -339,6 +431,14 @@ namespace CablePlan
             RefreshCurrentPdfSperrpauseList();
         }
         private void LstCablesItem_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is ListBoxItem item)
+            {
+                item.IsSelected = true;
+            }
+        }
+
+        private void LstSperrpausesItem_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (sender is ListBoxItem item)
             {
@@ -742,6 +842,12 @@ namespace CablePlan
 
         private void UpdateModeText()
         {
+            if (!ExpDrawPanel.IsExpanded)
+            {
+                TxtMode.Text = "Modus: Ansicht (Zeichnen eingeklappt)";
+                return;
+            }
+
             string mode = GetCurrentDrawKind() switch
             {
                 DrawKind.Cable => "Modus: Kabel zeichnen",
@@ -847,6 +953,7 @@ namespace CablePlan
 
             RedrawAll();
             UpdateSperrFilterInfo();
+            RefreshCurrentPdfCableList();
         }
 
         private void PdfScroll_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -1383,6 +1490,20 @@ namespace CablePlan
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(s => s);
 
+            if (_activeSperrpauseFilters.Count > 0)
+            {
+                var allowedCableIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var kv in _cableToSperrpauseAssignments)
+                {
+                    if (kv.Value.Any(sp => _activeSperrpauseFilters.Contains(sp)))
+                        allowedCableIds.Add(kv.Key);
+                }
+
+                visibleList = visibleList
+                    .Where(id => allowedCableIds.Contains(id))
+                    .OrderBy(s => s);
+            }
+
             if (!string.IsNullOrWhiteSpace(q))
                 visibleList = visibleList
                     .Where(id => id.Contains(q, StringComparison.OrdinalIgnoreCase))
@@ -1640,7 +1761,65 @@ namespace CablePlan
 
                 SaveAssignments();
                 RefreshCurrentPdfSperrpauseList();
+                RefreshCurrentPdfCableList();
             }
+        }
+
+        private void AssignCablesToSperrpause_Click(object sender, RoutedEventArgs e)
+        {
+            if (LstSperrpauses.SelectedItem is not string sperrpauseId || string.IsNullOrWhiteSpace(sperrpauseId))
+            {
+                MessageBox.Show("Bitte zuerst eine Sperrpause auswählen.");
+                return;
+            }
+
+            var currentPlanCableIds = _data.Cables
+                .Select(x => x.Id)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x)
+                .ToList();
+
+            var assignedCableIds = _cableToSperrpauseAssignments
+                .Where(kv => kv.Value.Contains(sperrpauseId))
+                .Select(kv => kv.Key)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var wnd = new CableAssignmentWindow(sperrpauseId, currentPlanCableIds, assignedCableIds)
+            {
+                Owner = this
+            };
+
+            if (wnd.ShowDialog() != true)
+                return;
+
+            var selectedIds = wnd.SelectedCableIds
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var cableId in currentPlanCableIds)
+            {
+                if (!_cableToSperrpauseAssignments.TryGetValue(cableId, out var currentSet))
+                {
+                    currentSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    _cableToSperrpauseAssignments[cableId] = currentSet;
+                }
+
+                if (selectedIds.Contains(cableId))
+                    currentSet.Add(sperrpauseId);
+                else
+                    currentSet.Remove(sperrpauseId);
+            }
+
+            foreach (var cableId in _cableToSperrpauseAssignments.Keys.ToList())
+            {
+                if (_cableToSperrpauseAssignments[cableId].Count == 0)
+                    _cableToSperrpauseAssignments.Remove(cableId);
+            }
+
+            SaveAssignments();
+            RefreshCurrentPdfSperrpauseList();
+            RefreshCurrentPdfCableList();
+            RedrawAll();
         }
         private List<string> GetTargetCableIdsForAssignment()
         {
