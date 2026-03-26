@@ -15,6 +15,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
+using PdfiumDoc = PdfiumViewer.PdfDocument;
+using SharpPdfDocument = PdfSharp.Pdf.PdfDocument;
 
 using IOPath = System.IO.Path;
 using IOFile = System.IO.File;
@@ -699,7 +701,7 @@ namespace CablePlan
 
             try
             {
-                using var doc = PdfDocument.Load(_currentPdfPath);
+                using var doc = PdfiumDoc.Load(_currentPdfPath);
 
                 var size = doc.PageSizes[0];
                 int dpi = 160;
@@ -923,13 +925,14 @@ namespace CablePlan
                 pngBytes = ms.ToArray();
             }
 
-            using var doc = new PdfDocument();
+            using var doc = new SharpPdfDocument();
             var page = doc.AddPage();
             page.Width = bmp.PixelWidth * 72.0 / 96.0;
             page.Height = bmp.PixelHeight * 72.0 / 96.0;
 
             using (var gfx = XGraphics.FromPdfPage(page))
-            using (var img = XImage.FromStream(() => new MemoryStream(pngBytes)))
+            using (var imgStream = new MemoryStream(pngBytes))
+            using (var img = XImage.FromStream(imgStream))
             {
                 gfx.DrawImage(img, 0, 0, page.Width, page.Height);
             }
