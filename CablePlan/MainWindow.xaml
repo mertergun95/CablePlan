@@ -82,30 +82,36 @@
 
                     <Separator Margin="0,12"/>
 
-                    <TextBlock Text="Zeichnen" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
-                    <StackPanel Orientation="Horizontal">
-                        <ToggleButton x:Name="TglDrawCable" Content="Kabel zeichnen" Width="130" Height="30" Margin="0,0,8,0"/>
-                        <ToggleButton x:Name="TglDrawSperrpause" Content="Sperrpause zeichnen" Width="150" Height="30" Margin="0,0,8,0"/>
-                        <ToggleButton x:Name="TglSetLabel" Content="Beschriftung" Width="100" Height="30"/>
-                    </StackPanel>
+                    <Expander x:Name="ExpDrawPanel"
+                              Header="Zeichnen"
+                              IsExpanded="False"
+                              Margin="0,0,0,0">
+                        <StackPanel Margin="0,8,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <ToggleButton x:Name="TglDrawCable" Content="Kabel zeichnen" Width="130" Height="30" Margin="0,0,8,0"/>
+                                <ToggleButton x:Name="TglDrawSperrpause" Content="Sperrpause zeichnen" Width="150" Height="30" Margin="0,0,8,0"/>
+                                <ToggleButton x:Name="TglSetLabel" Content="Beschriftung" Width="100" Height="30"/>
+                            </StackPanel>
 
-                    <TextBlock Text="Kabel-ID" FontWeight="Bold" Margin="0,12,0,6"/>
-                    <TextBox x:Name="TxtCableId" Height="28"/>
+                            <TextBlock Text="Kabel-ID" FontWeight="Bold" Margin="0,12,0,6"/>
+                            <TextBox x:Name="TxtCableId" Height="28"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Button x:Name="BtnFinishCable" Content="Kabel speichern" Height="30" Width="150" Margin="0,0,8,0"/>
-                        <Button x:Name="BtnDeleteCable" Content="Kabel löschen" Height="30" Width="120"/>
-                    </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button x:Name="BtnFinishCable" Content="Kabel speichern" Height="30" Width="150" Margin="0,0,8,0"/>
+                                <Button x:Name="BtnDeleteCable" Content="Kabel löschen" Height="30" Width="120"/>
+                            </StackPanel>
 
-                    <TextBlock Text="Sperrpause-ID" FontWeight="Bold" Margin="0,12,0,6"/>
-                    <TextBox x:Name="TxtSperrpauseId" Height="28"/>
+                            <TextBlock Text="Sperrpause-ID" FontWeight="Bold" Margin="0,12,0,6"/>
+                            <TextBox x:Name="TxtSperrpauseId" Height="28"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Button x:Name="BtnFinishSperrpause" Content="Sperrpause speichern" Height="30" Width="170" Margin="0,0,8,0"/>
-                        <Button x:Name="BtnDeleteSperrpause" Content="Sperrpause löschen" Height="30" Width="150"/>
-                    </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button x:Name="BtnFinishSperrpause" Content="Sperrpause speichern" Height="30" Width="170" Margin="0,0,8,0"/>
+                                <Button x:Name="BtnDeleteSperrpause" Content="Sperrpause löschen" Height="30" Width="150"/>
+                            </StackPanel>
 
-                    <Button x:Name="BtnCancel" Content="Abbrechen" Height="30" Width="120" Margin="0,8,0,0"/>
+                            <Button x:Name="BtnCancel" Content="Abbrechen" Height="30" Width="120" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Expander>
 
                     <Separator Margin="0,14"/>
 
@@ -187,7 +193,22 @@
                     <ListBox x:Name="LstSperrpauses"
                              Height="170"
                              Margin="0,8,0,0"
-                             SelectionMode="Extended"/>
+                             SelectionMode="Extended">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <EventSetter Event="PreviewMouseRightButtonDown"
+                                             Handler="LstSperrpausesItem_PreviewMouseRightButtonDown"/>
+                                <Setter Property="ContextMenu">
+                                    <Setter.Value>
+                                        <ContextMenu>
+                                            <MenuItem x:Name="MiAssignCablesToSperrpause"
+                                                      Header="Kabel zuordnen"/>
+                                        </ContextMenu>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                    </ListBox>
 
                 </StackPanel>
             </ScrollViewer>
