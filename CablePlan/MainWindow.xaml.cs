@@ -13,6 +13,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using PdfSharp.Drawing;
+using PdfSharp.Pdf;
 
 using IOPath = System.IO.Path;
 using IOFile = System.IO.File;
@@ -144,6 +146,9 @@ namespace CablePlan
 
             BtnFitWidth.Click += (_, __) => FitWidth();
             BtnFitPage.Click += (_, __) => FitPage();
+            BtnExportPng.Click += (_, __) => ExportCurrentViewAsPng();
+            BtnExportPdf.Click += (_, __) => ExportCurrentViewAsPdf();
+            BtnPrintView.Click += (_, __) => PrintCurrentView();
 
             TglDrawCable.Checked += (_, __) => ActivateDrawMode(DrawKind.Cable);
             TglDrawCable.Unchecked += (_, __) =>
@@ -849,6 +854,113 @@ namespace CablePlan
 
             PdfScroll.ScrollToHorizontalOffset(0);
             PdfScroll.ScrollToVerticalOffset(0);
+        }
+
+        private RenderTargetBitmap? CaptureCurrentViewportBitmap()
+        {
+            if (PlanImage.Source == null || PdfScroll.ActualWidth < 2 || PdfScroll.ActualHeight < 2)
+                return null;
+
+            PdfScroll.UpdateLayout();
+
+            int width = (int)Math.Max(1, Math.Round(PdfScroll.ActualWidth));
+            int height = (int)Math.Max(1, Math.Round(PdfScroll.ActualHeight));
+
+            var rtb = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+            rtb.Render(PdfScroll);
+            return rtb;
+        }
+
+        private void ExportCurrentViewAsPng()
+        {
+            var bmp = CaptureCurrentViewportBitmap();
+            if (bmp == null)
+            {
+                MessageBox.Show("Aktuell gibt es keine sichtbare Planansicht zum Exportieren.");
+                return;
+            }
+
+            var dlg = new SaveFileDialog
+            {
+                Filter = "PNG Bild|*.png",
+                FileName = $"{_currentPdfBaseName}_view.png"
+            };
+
+            if (dlg.ShowDialog() != true)
+                return;
+
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(bmp));
+
+            using var fs = File.Create(dlg.FileName);
+            encoder.Save(fs);
+        }
+
+        private void ExportCurrentViewAsPdf()
+        {
+            var bmp = CaptureCurrentViewportBitmap();
+            if (bmp == null)
+            {
+                MessageBox.Show("Aktuell gibt es keine sichtbare Planansicht zum Exportieren.");
+                return;
+            }
+
+            var dlg = new SaveFileDialog
+            {
+                Filter = "PDF Datei|*.pdf",
+                FileName = $"{_currentPdfBaseName}_view.pdf"
+            };
+
+            if (dlg.ShowDialog() != true)
+                return;
+
+            byte[] pngBytes;
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(bmp));
+            using (var ms = new MemoryStream())
+            {
+                encoder.Save(ms);
+                pngBytes = ms.ToArray();
+            }
+
+            using var doc = new PdfDocument();
+            var page = doc.AddPage();
+            page.Width = bmp.PixelWidth * 72.0 / 96.0;
+            page.Height = bmp.PixelHeight * 72.0 / 96.0;
+
+            using (var gfx = XGraphics.FromPdfPage(page))
+            using (var img = XImage.FromStream(() => new MemoryStream(pngBytes)))
+            {
+                gfx.DrawImage(img, 0, 0, page.Width, page.Height);
+            }
+
+            doc.Save(dlg.FileName);
+        }
+
+        private void PrintCurrentView()
+        {
+            var bmp = CaptureCurrentViewportBitmap();
+            if (bmp == null)
+            {
+                MessageBox.Show("Aktuell gibt es keine sichtbare Planansicht zum Drucken.");
+                return;
+            }
+
+            var dlg = new PrintDialog();
+            if (dlg.ShowDialog() != true)
+                return;
+
+            var image = new Image
+            {
+                Source = bmp,
+                Stretch = Stretch.Uniform,
+                Width = dlg.PrintableAreaWidth,
+                Height = dlg.PrintableAreaHeight
+            };
+
+            image.Measure(new Size(dlg.PrintableAreaWidth, dlg.PrintableAreaHeight));
+            image.Arrange(new Rect(new Point(0, 0), image.DesiredSize));
+            dlg.PrintVisual(image, "CablePlan Aktuelle Ansicht");
         }
 
         private void UpdateModeText()
