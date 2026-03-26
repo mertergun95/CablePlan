@@ -168,11 +168,11 @@
                     <TextBlock Margin="0,8,0,0" Foreground="#B8C6E6"
                                Text="Pan: mittlere Maustaste halten &amp; ziehen. Zoom: Mausrad. ESC=Abbrechen. Enter=Speichern."/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Button x:Name="BtnExportPng" Content="Ansicht als PNG" Height="30" Width="145" Margin="0,0,8,0"/>
-                        <Button x:Name="BtnExportPdf" Content="Ansicht als PDF" Height="30" Width="145" Margin="0,0,8,0"/>
-                        <Button x:Name="BtnPrintView" Content="Drucken" Height="30" Width="110"/>
-                    </StackPanel>
+                    <UniformGrid Columns="3" Margin="0,10,0,0">
+                        <Button x:Name="BtnExportPng" Content="Ansicht als PNG" Height="30" Margin="0,0,6,0"/>
+                        <Button x:Name="BtnExportPdf" Content="Ansicht als PDF" Height="30" Margin="0,0,6,0"/>
+                        <Button x:Name="BtnPrintView" Content="Drucken" Height="30"/>
+                    </UniformGrid>
 
                     <Separator Margin="0,12"/>
 

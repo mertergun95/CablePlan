@@ -858,24 +858,42 @@ namespace CablePlan
             PdfScroll.ScrollToVerticalOffset(0);
         }
 
-        private RenderTargetBitmap? CaptureCurrentViewportBitmap()
+        private RenderTargetBitmap? CaptureCurrentViewportBitmap(double exportScale = 1.0, double targetDpi = 96.0)
         {
             if (PlanImage.Source == null || PdfScroll.ActualWidth < 2 || PdfScroll.ActualHeight < 2)
                 return null;
 
             PdfScroll.UpdateLayout();
 
-            int width = (int)Math.Max(1, Math.Round(PdfScroll.ActualWidth));
-            int height = (int)Math.Max(1, Math.Round(PdfScroll.ActualHeight));
+            exportScale = Math.Max(1.0, exportScale);
+            targetDpi = Math.Max(96.0, targetDpi);
 
-            var rtb = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
-            rtb.Render(PdfScroll);
+            int width = (int)Math.Max(1, Math.Round(PdfScroll.ActualWidth * exportScale));
+            int height = (int)Math.Max(1, Math.Round(PdfScroll.ActualHeight * exportScale));
+            double dpi = targetDpi;
+
+            var rtb = new RenderTargetBitmap(width, height, dpi, dpi, PixelFormats.Pbgra32);
+
+            var visual = new DrawingVisual();
+            using (var dc = visual.RenderOpen())
+            {
+                dc.PushTransform(new ScaleTransform(exportScale, exportScale));
+                var vb = new VisualBrush(PdfScroll)
+                {
+                    Stretch = Stretch.None,
+                    AlignmentX = AlignmentX.Left,
+                    AlignmentY = AlignmentY.Top
+                };
+                dc.DrawRectangle(vb, null, new Rect(new Point(0, 0), new Size(PdfScroll.ActualWidth, PdfScroll.ActualHeight)));
+            }
+
+            rtb.Render(visual);
             return rtb;
         }
 
         private void ExportCurrentViewAsPng()
         {
-            var bmp = CaptureCurrentViewportBitmap();
+            var bmp = CaptureCurrentViewportBitmap(exportScale: 3.0, targetDpi: 300.0);
             if (bmp == null)
             {
                 MessageBox.Show("Aktuell gibt es keine sichtbare Planansicht zum Exportieren.");
@@ -900,7 +918,7 @@ namespace CablePlan
 
         private void ExportCurrentViewAsPdf()
         {
-            var bmp = CaptureCurrentViewportBitmap();
+            var bmp = CaptureCurrentViewportBitmap(exportScale: 3.0, targetDpi: 300.0);
             if (bmp == null)
             {
                 MessageBox.Show("Aktuell gibt es keine sichtbare Planansicht zum Exportieren.");
@@ -1904,6 +1922,17 @@ namespace CablePlan
                 RefreshCurrentPdfSperrpauseList();
                 RefreshCurrentPdfCableList();
             }
+
+            foreach (var cableId in _cableToSperrpauseAssignments.Keys.ToList())
+            {
+                if (_cableToSperrpauseAssignments[cableId].Count == 0)
+                    _cableToSperrpauseAssignments.Remove(cableId);
+            }
+
+            SaveAssignments();
+            RefreshCurrentPdfSperrpauseList();
+            RefreshCurrentPdfCableList();
+            RedrawAll();
         }
 
         private void AssignCablesToSperrpause_Click(object sender, RoutedEventArgs e)
