@@ -1922,6 +1922,17 @@ namespace CablePlan
                 RefreshCurrentPdfSperrpauseList();
                 RefreshCurrentPdfCableList();
             }
+
+            foreach (var cableId in _cableToSperrpauseAssignments.Keys.ToList())
+            {
+                if (_cableToSperrpauseAssignments[cableId].Count == 0)
+                    _cableToSperrpauseAssignments.Remove(cableId);
+            }
+
+            SaveAssignments();
+            RefreshCurrentPdfSperrpauseList();
+            RefreshCurrentPdfCableList();
+            RedrawAll();
         }
 
         private void AssignCablesToSperrpause_Click(object sender, RoutedEventArgs e)
