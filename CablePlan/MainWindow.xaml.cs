@@ -870,24 +870,10 @@ namespace CablePlan
 
             int width = (int)Math.Max(1, Math.Round(PdfScroll.ActualWidth * exportScale));
             int height = (int)Math.Max(1, Math.Round(PdfScroll.ActualHeight * exportScale));
-            double dpi = targetDpi;
+            double dpi = Math.Max(targetDpi, 96.0 * exportScale);
 
             var rtb = new RenderTargetBitmap(width, height, dpi, dpi, PixelFormats.Pbgra32);
-
-            var visual = new DrawingVisual();
-            using (var dc = visual.RenderOpen())
-            {
-                dc.PushTransform(new ScaleTransform(exportScale, exportScale));
-                var vb = new VisualBrush(PdfScroll)
-                {
-                    Stretch = Stretch.None,
-                    AlignmentX = AlignmentX.Left,
-                    AlignmentY = AlignmentY.Top
-                };
-                dc.DrawRectangle(vb, null, new Rect(new Point(0, 0), new Size(PdfScroll.ActualWidth, PdfScroll.ActualHeight)));
-            }
-
-            rtb.Render(visual);
+            rtb.Render(PdfScroll);
             return rtb;
         }
 
@@ -1922,17 +1908,6 @@ namespace CablePlan
                 RefreshCurrentPdfSperrpauseList();
                 RefreshCurrentPdfCableList();
             }
-
-            foreach (var cableId in _cableToSperrpauseAssignments.Keys.ToList())
-            {
-                if (_cableToSperrpauseAssignments[cableId].Count == 0)
-                    _cableToSperrpauseAssignments.Remove(cableId);
-            }
-
-            SaveAssignments();
-            RefreshCurrentPdfSperrpauseList();
-            RefreshCurrentPdfCableList();
-            RedrawAll();
         }
 
         private void AssignCablesToSperrpause_Click(object sender, RoutedEventArgs e)

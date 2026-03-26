@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Kabel-Lageplan – Markierung"
         Width="1520" Height="980"
+        WindowState="Maximized"
         Background="#1F2430">
 
     <Window.Resources>
@@ -179,6 +180,7 @@
                     <Expander x:Name="ExpDrawPanel"
                               Header="Zeichnen"
                               IsExpanded="False"
+                              Foreground="#E4EAF7"
                               Margin="0,0,0,0">
                         <StackPanel Margin="0,8,0,0">
                             <StackPanel Orientation="Horizontal">
@@ -257,30 +259,29 @@
 
                     <Separator Margin="0,14"/>
 
-                    <DockPanel Margin="0,0,0,6">
+                    <StackPanel Margin="0,0,0,6">
                         <TextBlock Text="Sperrpausen-Filter"
                                    FontWeight="Bold"
-                                   VerticalAlignment="Center"
-                                   DockPanel.Dock="Left"/>
-
-                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                                   Margin="0,0,0,6"/>
+                        <WrapPanel>
                             <ToggleButton x:Name="TglSperrBasedCableFilter"
                                           Content="Sperr → Kabel"
-                                          Width="120"
+                                          MinWidth="120"
                                           Height="24"
-                                          Margin="0,0,8,0"/>
+                                          Margin="0,0,8,6"/>
                             <ToggleButton x:Name="TglCableBasedSperrFilter"
                                           Content="Kabel → Sperr"
-                                          Width="110"
+                                          MinWidth="110"
                                           Height="24"
                                           IsChecked="True"
-                                          Margin="0,0,8,0"/>
+                                          Margin="0,0,8,6"/>
                             <Button x:Name="BtnClearSperrFilter"
                                     Content="Filter leeren"
-                                    Width="100"
-                                    Height="24"/>
-                        </StackPanel>
-                    </DockPanel>
+                                    MinWidth="100"
+                                    Height="24"
+                                    Margin="0,0,0,6"/>
+                        </WrapPanel>
+                    </StackPanel>
 
                     <TextBlock x:Name="TxtSperrFilterInfo"
                                Text="Alle Sperrpausen sichtbar"
