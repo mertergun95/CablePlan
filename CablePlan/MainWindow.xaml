@@ -170,6 +170,11 @@
                                    DockPanel.Dock="Left"/>
 
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                            <ToggleButton x:Name="TglSperrBasedCableFilter"
+                                          Content="→ Kabel filtern"
+                                          Width="120"
+                                          Height="24"
+                                          Margin="0,0,8,0"/>
                             <ToggleButton x:Name="TglCableBasedSperrFilter"
                                           Content="Kabel-Filter"
                                           Width="100"
@@ -196,6 +201,8 @@
                              SelectionMode="Extended">
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
+                                <EventSetter Event="PreviewMouseLeftButtonDown"
+                                             Handler="LstSperrpausesItem_PreviewMouseLeftButtonDown"/>
                                 <EventSetter Event="PreviewMouseRightButtonDown"
                                              Handler="LstSperrpausesItem_PreviewMouseRightButtonDown"/>
                                 <Setter Property="ContextMenu">

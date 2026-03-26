@@ -168,6 +168,8 @@ namespace CablePlan
 
             TglCableBasedSperrFilter.Checked += (_, __) => RefreshCurrentPdfSperrpauseList();
             TglCableBasedSperrFilter.Unchecked += (_, __) => RefreshCurrentPdfSperrpauseList();
+            TglSperrBasedCableFilter.Checked += (_, __) => RefreshCurrentPdfCableList();
+            TglSperrBasedCableFilter.Unchecked += (_, __) => RefreshCurrentPdfCableList();
 
             BtnClearCableSelection.Click += (_, __) => ClearCableSelectionAndRefresh();
 
@@ -444,6 +446,15 @@ namespace CablePlan
             {
                 item.IsSelected = true;
             }
+        }
+
+        private void LstSperrpausesItem_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is not ListBoxItem item)
+                return;
+
+            item.IsSelected = !item.IsSelected;
+            e.Handled = true;
         }
         private void OpenWorkspaceFolder()
         {
@@ -1490,7 +1501,8 @@ namespace CablePlan
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(s => s);
 
-            if (_activeSperrpauseFilters.Count > 0)
+            bool sperrBasedCableFilterActive = TglSperrBasedCableFilter.IsChecked == true;
+            if (sperrBasedCableFilterActive && _activeSperrpauseFilters.Count > 0)
             {
                 var allowedCableIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var kv in _cableToSperrpauseAssignments)
@@ -1614,11 +1626,14 @@ namespace CablePlan
         private void UpdateSperrFilterInfo()
         {
             bool cableFilterActive = TglCableBasedSperrFilter.IsChecked == true;
+            bool sperrBasedCableFilterActive = TglSperrBasedCableFilter.IsChecked == true;
             var visibleCount = GetVisibleSperrpauseIdsForCurrentPlan().Count;
 
             if (!cableFilterActive)
             {
-                TxtSperrFilterInfo.Text = "Alle Sperrpausen sichtbar (Kabel-Filter aus)";
+                TxtSperrFilterInfo.Text = sperrBasedCableFilterActive
+                    ? "Sperr→Kabel-Filter aktiv, Kabel→Sperr-Filter aus"
+                    : "Alle Sperrpausen sichtbar (Kabel-Filter aus)";
                 return;
             }
 
