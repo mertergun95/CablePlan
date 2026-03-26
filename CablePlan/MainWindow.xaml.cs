@@ -925,19 +925,30 @@ namespace CablePlan
                 pngBytes = ms.ToArray();
             }
 
-            using var doc = new SharpPdfDocument();
-            var page = doc.AddPage();
-            page.Width = bmp.PixelWidth * 72.0 / 96.0;
-            page.Height = bmp.PixelHeight * 72.0 / 96.0;
+            string tempPngPath = IOPath.Combine(IOPath.GetTempPath(), $"cableplan_{Guid.NewGuid():N}.png");
 
-            using (var gfx = XGraphics.FromPdfPage(page))
-            using (var imgStream = new MemoryStream(pngBytes))
-            using (var img = XImage.FromStream(imgStream))
+            try
             {
-                gfx.DrawImage(img, 0, 0, page.Width, page.Height);
-            }
+                IOFile.WriteAllBytes(tempPngPath, pngBytes);
 
-            doc.Save(dlg.FileName);
+                using var doc = new SharpPdfDocument();
+                var page = doc.AddPage();
+                page.Width = bmp.PixelWidth * 72.0 / 96.0;
+                page.Height = bmp.PixelHeight * 72.0 / 96.0;
+
+                using (var gfx = XGraphics.FromPdfPage(page))
+                using (var img = XImage.FromFile(tempPngPath))
+                {
+                    gfx.DrawImage(img, 0, 0, page.Width, page.Height);
+                }
+
+                doc.Save(dlg.FileName);
+            }
+            finally
+            {
+                if (IOFile.Exists(tempPngPath))
+                    IOFile.Delete(tempPngPath);
+            }
         }
 
         private void PrintCurrentView()
