@@ -112,6 +112,9 @@ ipch/
 *.VC.db
 *.VC.VC.opendb
 
+# Generated from text template during Windows build
+CablePlan/Assets/company.ico
+
 # Visual Studio profiler
 *.psess
 *.vsp
