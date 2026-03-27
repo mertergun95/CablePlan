@@ -6,7 +6,19 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon Condition="Exists('Assets\company.ico')">Assets\company.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Assets\company.ico.b64" />
+    <Resource Include="Assets\company.ico" Condition="Exists('Assets\company.ico')" />
+  </ItemGroup>
+
+  <Target Name="GenerateCompanyIcon"
+          BeforeTargets="PrepareResources"
+          Condition="'$(OS)' == 'Windows_NT' and !Exists('$(MSBuildProjectDirectory)\Assets\company.ico') and Exists('$(MSBuildProjectDirectory)\Assets\company.ico.b64')">
+    <Exec Command="certutil -f -decode &quot;$(MSBuildProjectDirectory)\Assets\company.ico.b64&quot; &quot;$(MSBuildProjectDirectory)\Assets\company.ico&quot;" />
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Ookii.Dialogs.Wpf" Version="5.0.1" />
